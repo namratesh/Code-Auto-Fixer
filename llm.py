@@ -79,7 +79,7 @@ def review_code_with_llm(code: str):
     
     try:
         response = chain.invoke({"code": code})
-        print(response.choices[0].message.content)
+        # print(response.choices[0].message.content)÷
         return response # Ensure valid JSON output
     except Exception as e:
         return {"error": str(e)}
@@ -115,9 +115,5 @@ if __name__ == "__main__":
 
     feedback = review_code_with_llm(code_content)
 
-    # Save feedback to JSON file
-    output_file = "llm_feedback.json"
-    with open(output_file, "w") as f:
-        json.dump(feedback, f, indent=4)
 
-    print(f"Feedback saved to {output_file}")
+    print(f"Feedback : {feedback}")
