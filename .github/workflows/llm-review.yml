@@ -5,7 +5,7 @@ on:
     branches:
       - main  # Adjust based on where auto-fix pushes changes
   workflow_run:
-    workflows: ["Auto-Fix Workflow"]
+    workflows: ["auto-fix"]
     types:
       - completed
 
