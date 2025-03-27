@@ -17,3 +17,7 @@ def buggy Function():
   eval(user_input) # Security vulnerability
   return x+y
 
+
+
+def hello_():
+    return 0
