@@ -39,6 +39,7 @@ jobs:
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
+          git checkout "${{ github.event.pull_request.head.ref }}"  # Switch to PR branch
           git add $FILES
           git commit -m "Auto-fix: Applied formatting and syntax fixes" || exit 0
-          git push
+          git push origin "${{ github.event.pull_request.head.ref }}"
