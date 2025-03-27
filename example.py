@@ -2,8 +2,7 @@ a = 2
 if a == 2:
     print(1)
 
-def hello():
-    print("hello")
+
     
     
 def buggyFunction()
