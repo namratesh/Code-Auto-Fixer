@@ -18,7 +18,7 @@ def get_llm_client():
     return ChatOpenAI(
         model="deepseek/deepseek-chat-v3-0324",  # Or "gpt-3.5-turbo-0125"
         temperature=0,
-        openai_api_key=os.getenv("API_KEY"),
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_api_base="https://openrouter.ai/api/v1"
     ).with_structured_output(ReviewCode)
 def get_modified_files():
