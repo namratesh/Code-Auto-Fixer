@@ -1,0 +1,6 @@
+openi
+black
+flake8
+python-dotenv
+langchain
+langchain_openai

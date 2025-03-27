@@ -21,7 +21,7 @@ jobs:
           python-version: '3.12'  # Adjust based on your compatibility
 
       - name: Install dependencies
-        run: pip install black flake8  # Add other needed dependencies
+        run: pip install -r req.txt 
 
       - name: Get changed Python files
         id: changed-files
