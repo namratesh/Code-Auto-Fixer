@@ -33,7 +33,7 @@ jobs:
         run: pip install -r req.txt
 
       - name: Load environment variables
-        run: echo "API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+        run: echo "API_KEY=${{ secrets.API_KEY }}" >> $GITHUB_ENV
 
       - name: Run LLM Code Review
         id: llm_review

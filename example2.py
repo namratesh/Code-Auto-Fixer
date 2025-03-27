@@ -11,3 +11,11 @@ def hello_():
     print("inside functions")
     return 0
 
+
+
+
+def hello_2():
+    
+    print("inside functions")
+    return 0
+
