@@ -6,10 +6,10 @@ def hello():
     print("hello")
     
     
-def buggyFunction():
+def buggyFunction()
   x=10
   y =20
-  if x > y  :
+  if x > y
       print("X is greater")
   else:
    print("Y is greater")
