@@ -85,36 +85,27 @@ def review_code_with_llm(code: str):
     except Exception as e:
         return {"error": str(e)}
 
-
 if __name__ == "__main__":
-    modified_files = get_modified_files()
+    if len(sys.argv) > 1:
+        # Case: Running with specific file(s) as arguments
+        modified_files = sys.argv[1:]
+    else:
+        # Case: Running in GitHub Actions (auto-detect modified files)
+        modified_files = get_modified_files()
     
     if not modified_files:
         print("No modified Python files found.")
-        exit(0)
+        sys.exit(0)
 
     feedback_results = {}
-
     for file in modified_files:
-        code = read_file_content(file)
-        feedback = review_code_with_llm(code)
-        feedback_results[file] = feedback
+        if not os.path.exists(file):
+            print(f"Error: File '{file}' not found.")
+            continue
+
+        code_content = read_file_content(file)
+        feedback_results[file] = review_code_with_llm(code_content)
+
     print("LLM review completed.")
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python llm.py <file_name>")
-        sys.exit(1)
-
-    file_name = sys.argv[1]
-    
-    if not os.path.exists(file_name):
-        print(f"Error: File '{file_name}' not found.")
-        sys.exit(1)
-
-    with open(file_name, "r") as file:
-        code_content = file.read()
-
-    feedback = review_code_with_llm(code_content)
-
-
-    print(f"Feedback : {feedback}")
+    for file, feedback in feedback_results.items():
+        print(f"\n### Feedback for {file} ###\n{feedback}")
