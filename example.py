@@ -6,7 +6,7 @@ if a == 2:
 
 
 
-def hello_()
+def hello_():
     print("inside functions")
     return 0
 
