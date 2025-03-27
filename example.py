@@ -6,7 +6,7 @@ def hello_():
     print("inside functions")
     return 0
 
-def hell):
+def hell()
     print("inside functions")
     return 0
 
