@@ -83,7 +83,7 @@ def review_code_with_llm(code: str):
         return response # Ensure valid JSON output
     except Exception as e:
         return {"error": str(e)}
-        raise
+
 
 if __name__ == "__main__":
     modified_files = get_modified_files()

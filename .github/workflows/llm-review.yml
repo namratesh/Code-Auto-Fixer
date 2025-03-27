@@ -33,15 +33,15 @@ jobs:
         run: echo "API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
 
       - name: Run LLM Code Review
-        run:  python llm.py > llm_output.json
+        id: llm_review
+        run: |
+          python llm.py > llm_output.txt
+          cat llm_output.txt  # Debugging step to verify output
 
       - name: Extract PR Number
         id: get_pr
         run: |
-          PR_NUMBER=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
-          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
-        env:
-          GITHUB_EVENT_PATH: ${{ github.event_path }}
+          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
 
       - name: Post PR Comment
         if: env.PR_NUMBER != ''
@@ -49,14 +49,17 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const { execSync } = require('child_process');
+            const fs = require('fs');
+            const llm_output = fs.readFileSync('llm_output.txt', 'utf8').trim();
 
-            // Run llm.py and capture output
-            const llm_output = execSync('python llm.py', { encoding: 'utf8' }).trim();
+            if (!llm_output) {
+              console.log("⚠️ No output from LLM script.");
+              return;
+            }
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: process.env.PR_NUMBER,
-              body: "```\n" + llm_output + "\n```"
+              body: "### 🤖 LLM Code Review Feedback\n```\n" + llm_output + "\n```"
             });
