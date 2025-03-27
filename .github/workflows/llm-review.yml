@@ -1,9 +1,11 @@
 name: LLM Code Review
 
 on:
-  push:
-    branches:
-      - main  # Adjust based on where auto-fix pushes changes
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
   workflow_run:
     workflows: ["auto-fix"]
     types:
