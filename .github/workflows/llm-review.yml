@@ -33,7 +33,7 @@ jobs:
         run: echo "API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
 
       - name: Run LLM Code Review
-        run: python llm.py  # Ensure llm.py generates `llm_feedback.json`
+        run:  python llm.py > llm_output.json
 
       - name: Extract PR Number
         id: get_pr
@@ -49,23 +49,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const fs = require('fs');
-            const feedback = JSON.parse(fs.readFileSync('llm_feedback.json', 'utf8'));
-            
-            let commentBody = "### 🤖 LLM Code Review Feedback\n";
-            for (const [file, review] of Object.entries(feedback)) {
-                commentBody += `#### 📂 File: \`${file}\`\n`;
-                commentBody += `**Overall Feedback:** ${review.overall_feedback || "N/A"}\n\n`;
-                commentBody += `**Detailed Feedback:**\n`;
-                for (const [category, issues] of Object.entries(review.detailed_feedback || {})) {
-                    commentBody += `- **${category}**: ${issues}\n`;
-                }
-                commentBody += "\n";
-            }
+            const { execSync } = require('child_process');
+
+            // Run llm.py and capture output
+            const llm_output = execSync('python llm.py', { encoding: 'utf8' }).trim();
 
             github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: process.env.PR_NUMBER,
-              body: commentBody
+              body: "```\n" + llm_output + "\n```"
             });

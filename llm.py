@@ -47,8 +47,9 @@ def review_code_with_llm(code: str):
     Returns:
         dict: JSON feedback from the LLM.
     """
+    language = "python"
     system_prompt = f"""
-    Analyze the following python code and provide structured feedback in JSON format.
+    Analyze the following {language} code and provide structured feedback in JSON format in sort.
 
     Ensure the response follows this schema:
     - "overall_feedback": High-level summary of the review.
@@ -58,14 +59,16 @@ def review_code_with_llm(code: str):
         - "security": Vulnerabilities such as unsafe imports, injection risks, or weak authentication.
         - "error_handling": Issues related to exception handling and robustness.
         - "best_practices": Violations of standard coding conventions.
+        - "doc string and input output type defined": Doc string in every function with input and output function define
     - "suggestions": Actionable improvements for each issue category.
 
     Strictly return only valid JSON output.
 
     Code:
-    ```python
+    ```{language}
     {code}```
     """
+
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt)
@@ -76,6 +79,7 @@ def review_code_with_llm(code: str):
     
     try:
         response = chain.invoke({"code": code})
+        print(response.choices[0].message.content)
         return response # Ensure valid JSON output
     except Exception as e:
         return {"error": str(e)}
@@ -94,11 +98,7 @@ if __name__ == "__main__":
         code = read_file_content(file)
         feedback = review_code_with_llm(code)
         feedback_results[file] = feedback
-
-    with open("llm_feedback.json", "w") as f:
-        json.dump(feedback_results, f, indent=4)
-
-    print("LLM review completed. Results saved in llm_feedback.json.")
+    print("LLM review completed.")
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python llm.py <file_name>")
