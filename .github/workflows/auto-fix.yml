@@ -24,7 +24,7 @@ jobs:
 
       - name: Run Fix Script
         run: |
-          python auto_fix.py $(git diff --name-only --diff-filter=AM HEAD~1)
+          python auto_fix.py $(git diff --name-only --diff-filter=AM HEAD^)
 
       - name: Commit and push fixes
         run: |
