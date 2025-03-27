@@ -5,7 +5,7 @@ if a == 2:
 
     
     
-def buggyFunction():
+def buggy Function()
   x=10
   y =20
   if x > y:

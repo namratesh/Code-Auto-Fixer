@@ -1,0 +1,69 @@
+name: LLM Code Review
+
+on:
+  push:
+    branches:
+      - main  # Adjust based on where auto-fix pushes changes
+  workflow_run:
+    workflows: ["Auto-Fix Workflow"]
+    types:
+      - completed
+
+jobs:
+  review_code:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Needed to post comments
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r req.txt
+
+      - name: Load environment variables
+        run: echo "API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Run LLM Code Review
+        run: python llm.py  # Ensure llm.py generates `llm_feedback.json`
+
+      - name: Extract PR Number
+        id: get_pr
+        run: |
+          PR_NUMBER=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
+          echo "PR_NUMBER=$PR_NUMBER" >> $GITHUB_ENV
+        env:
+          GITHUB_EVENT_PATH: ${{ github.event_path }}
+
+      - name: Post PR Comment
+        if: env.PR_NUMBER != ''
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const feedback = JSON.parse(fs.readFileSync('llm_feedback.json', 'utf8'));
+            
+            let commentBody = "### 🤖 LLM Code Review Feedback\n";
+            for (const [file, review] of Object.entries(feedback)) {
+                commentBody += `#### 📂 File: \`${file}\`\n`;
+                commentBody += `**Overall Feedback:** ${review.overall_feedback || "N/A"}\n\n`;
+                commentBody += `**Detailed Feedback:**\n`;
+                for (const [category, issues] of Object.entries(review.detailed_feedback || {})) {
+                    commentBody += `- **${category}**: ${issues}\n`;
+                }
+                commentBody += "\n";
+            }
+
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: process.env.PR_NUMBER,
+              body: commentBody
+            });
