@@ -30,18 +30,19 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install -r req.txt
+        run: pip install -r req.txt  # Change to requirements.txt if needed
 
       - name: Run LLM Code Review
         id: llm_review
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python llm.py > llm_output.txt
           cat llm_output.txt  # Debugging step to verify output
 
       - name: Extract PR Number
         id: get_pr
-        run: |
-          echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+        run: echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> $GITHUB_ENV
 
       - name: Post PR Comment
         if: env.PR_NUMBER != ''
