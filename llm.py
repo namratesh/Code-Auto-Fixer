@@ -79,6 +79,7 @@ def review_code_with_llm(code: str):
     
     try:
         response = chain.invoke({"code": code})
+        print(response)
         # print(response.choices[0].message.content)÷
         return response # Ensure valid JSON output
     except Exception as e:
@@ -117,4 +118,3 @@ if __name__ == "__main__":
 
 
     print(f"Feedback : {feedback}")
-    return feedback
