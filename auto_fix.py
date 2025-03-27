@@ -1,107 +1,59 @@
 import ast
 import sys
-import subprocess
-import os
-import re
 
-def fix_print_statements(file_path):
-    """
-    Fix missing parentheses in Python 2-style print statements.
-    """
-    with open(file_path, "r", encoding="utf-8") as file:
-        source_code = file.read()
-
-    try:
-        ast.parse(source_code)
-        return False  # No SyntaxError, no fix needed
-    except SyntaxError as e:
-        if "Missing parentheses in call to 'print'" in str(e):
-            print(f"🔧 Fixing print statement in: {file_path}")
-            fixed_code = re.sub(r"(?<=\bprint) (.+)", r"(\1)", source_code)
-            with open(file_path, "w", encoding="utf-8") as file:
-                file.write(fixed_code)
-            return True
-        return False
-
-
-def fix_missing_colons(file_path):
-    """
-    Detects and adds missing colons (:) for control structures.
-    """
-    with open(file_path, "r", encoding="utf-8") as file:
-        lines = file.readlines()
-
-    updated_lines = []
-    fixed = False
-    pattern = r"^\s*(if|elif|else|for|while|def|class)\b.*(?!:)\s*$"
-
+def fix_print_statements(code):
+    """Fix missing parentheses in print statements for Python 2 → 3 compatibility."""
+    lines = code.split("\n")
+    fixed_lines = []
     for line in lines:
-        if re.match(pattern, line):
-            print(f"🔧 Adding missing colon in: {line.strip()}")
-            line = line.rstrip() + ":\n"
-            fixed = True
-        updated_lines.append(line)
+        stripped = line.strip()
+        if stripped.startswith("print ") and "(" not in stripped:  # Fix `print 'Hello'`
+            line = line.replace("print ", "print(", 1) + ")"
+        fixed_lines.append(line)
+    return "\n".join(fixed_lines)
 
-    if fixed:
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.writelines(updated_lines)
+def fix_missing_colons(code):
+    """Detect missing colons in if, elif, else, for, while, and function/class definitions."""
+    lines = code.split("\n")
+    fixed_lines = []
+    
+    for line in lines:
+        stripped = line.strip()
+        if (
+            (stripped.startswith(("if ", "elif ", "else", "for ", "while ", "def ", "class "))) 
+            and not stripped.endswith(":")
+        ):
+            line += ":"  # Add missing colon
+        fixed_lines.append(line)
 
-    return fixed
+    return "\n".join(fixed_lines)
 
-
-def format_code_with_black(file_path):
-    """
-    Format the Python file using Black (PEP8 autoformatter).
-    """
-    print(f"🖋 Formatting {file_path} with Black...")
-    subprocess.run(["black", file_path], check=True)
-
-
-def run_security_check(file_path):
-    """
-    Run a security scan using Bandit.
-    """
-    print(f"🔍 Running security check on {file_path}...")
-    result = subprocess.run(["bandit", "-r", file_path], capture_output=True, text=True)
-    print(result.stdout)
-    return "No issues" in result.stdout
-
+def fix_code(code):
+    """Apply all fixes (print statements + missing colons)."""
+    code = fix_print_statements(code)
+    code = fix_missing_colons(code)
+    return code
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python fix_print.py <file1.py> <file2.py> ...")
+        print("Usage: python auto_fix.py <filename>")
         sys.exit(1)
 
-    files = sys.argv[1:]
-    for file_path in files:
-        if not os.path.exists(file_path):
-            print(f"⚠ File not found: {file_path}")
-            continue
+    filename = sys.argv[1]
 
-        print(f"🚀 Processing {file_path}...")
+    try:
+        with open(filename, "r") as f:
+            code = f.read()
 
-        # Step 1: Fix print statements if needed
-        fixed_prints = fix_print_statements(file_path)
+        fixed_code = fix_code(code)
 
-        # Step 2: Fix missing colons
-        fixed_colons = fix_missing_colons(file_path)
+        with open(filename, "w") as f:  # Overwrite with fixed version
+            f.write(fixed_code)
 
-        # Step 3: Format code with Black
-        format_code_with_black(file_path)
+        print(f"✅ Fixed issues in {filename}")
 
-        # Step 4: Run security check
-        security_passed = run_security_check(file_path)
-
-        if fixed_prints:
-            print(f"✅ {file_path}: Print statements fixed.")
-        if fixed_colons:
-            print(f"✅ {file_path}: Missing colons fixed.")
-        if security_passed:
-            print(f"✅ {file_path}: No security issues found.")
-        else:
-            print(f"⚠ {file_path}: Security issues detected! Please review.")
-
-    print("🎯 Auto-fix process completed.")
+    except Exception as e:
+        print(f"❌ Error processing {filename}: {e}")
 
 if __name__ == "__main__":
     main()
