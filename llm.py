@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 load_dotenv()
+
 class ReviewCode:
     review_comment: str
 
@@ -21,23 +22,19 @@ def get_llm_client():
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_api_base="https://openrouter.ai/api/v1"
     ).with_structured_output(ReviewCode)
-    
-# def get_modified_files():
-#     """
-#     Retrieves the list of modified Python files from the latest commit.
-#     """
-#     result = subprocess.run(["git", "diff", "--name-only", "HEAD~1"], capture_output=True, text=True)
-#     files = result.stdout.strip().split("\n")
-#     return [file for file in files if file.endswith(".py")]
 
 def get_modified_files():
     """
     Retrieves the list of modified Python files in a PR.
-    Dynamically detects the base branch for the PR.
     """
-    base_branch = os.getenv("GITHUB_BASE_REF")  # Base branch of the PR (e.g., main, dev)
+    base_branch = os.getenv("GITHUB_BASE_REF")  # Base branch of the PR
     if not base_branch:
         print("Error: GITHUB_BASE_REF is not set. Are you running in a PR context?")
+        sys.exit(1)
+
+    result = subprocess.run(["git", "fetch", "origin", base_branch], capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"Git fetch failed: {result.stderr}")
         sys.exit(1)
 
     result = subprocess.run(["git", "diff", "--name-only", f"origin/{base_branch}...HEAD"], capture_output=True, text=True)
@@ -59,36 +56,27 @@ def read_file_content(file_path):
 def review_code_with_llm(code: str):
     """
     Calls an LLM to review the given code and returns feedback.
-
-    Args:
-        code (str): The code snippet to be reviewed.
-        language (str): The type of code ('python', 'docker', 'github_workflow').
-
-    Returns:
-        dict: JSON feedback from the LLM.
     """
     language = "python"
     system_prompt = f"""
-    Analyze the following {language} code and provide structured feedback in JSON format in sort.
+    Analyze the following {language} code and provide structured feedback in JSON format.
 
-    Ensure the response follows this schema:
-    - "overall_feedback": High-level summary of the review.
-    - "detailed_feedback": A categorized breakdown of issues:
-        - "code_quality": Issues related to readability, maintainability, and structure.
-        - "performance": Inefficiencies, redundant computations, or better algorithms.
-        - "security": Vulnerabilities such as unsafe imports, injection risks, or weak authentication.
-        - "error_handling": Issues related to exception handling and robustness.
-        - "best_practices": Violations of standard coding conventions.
-        - "doc string and input output type defined": Doc string in every function with input and output function define
-    - "suggestions": Actionable improvements for each issue category.
+    Schema:
+    - "overall_feedback": Summary of the review.
+    - "detailed_feedback": Categorized breakdown of issues:
+        - "code_quality": Readability and maintainability.
+        - "performance": Inefficiencies or redundant computations.
+        - "security": Vulnerabilities like unsafe imports or injections.
+        - "error_handling": Exception handling and robustness.
+        - "best_practices": Standard coding conventions.
+        - "doc_strings": Presence of docstrings and input/output types.
 
-    Strictly return only valid JSON output.
+    Only return valid JSON.
 
     Code:
     ```{language}
     {code}```
     """
-
 
     prompt = ChatPromptTemplate.from_messages([
         ("system", system_prompt)
@@ -99,20 +87,13 @@ def review_code_with_llm(code: str):
     
     try:
         response = chain.invoke({"code": code})
-        print(response)
-        # print(response.choices[0].message.content)÷
-        return response # Ensure valid JSON output
+        return response
     except Exception as e:
         return {"error": str(e)}
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        # Case: Running with specific file(s) as arguments
-        modified_files = sys.argv[1:]
-    else:
-        # Case: Running in GitHub Actions (auto-detect modified files)
-        modified_files = get_modified_files()
-    
+    modified_files = get_modified_files()
+
     if not modified_files:
         print("No modified Python files found.")
         sys.exit(0)
@@ -126,6 +107,7 @@ if __name__ == "__main__":
         code_content = read_file_content(file)
         feedback_results[file] = review_code_with_llm(code_content)
 
-    print("LLM review completed.")
-    for file, feedback in feedback_results.items():
-        print(f"\n### Feedback for {file} ###\n{feedback}")
+    with open("llm_output.json", "w") as f:
+        json.dump(feedback_results, f, indent=4)
+
+    print("LLM review completed. Output saved to llm_output.json.")

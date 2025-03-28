@@ -5,7 +5,6 @@ on:
     types:
       - opened
       - synchronize
-
   workflow_run:
     workflows: ["auto-fix"]
     types:
@@ -22,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all history
-          ref: ${{ github.event.pull_request.head.ref }}  
+          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -37,9 +36,13 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          set -x  # Enables debug mode to show commands before execution
-          python llm.py > llm_output.txt 2>&1 || (cat llm_output.txt && exit 1)
-          exit 1  # Forces a failure if any issue occurs
+          set -x  # Debug mode
+          python llm.py || echo "LLM review script failed"
+          
+          if [ ! -s "llm_output.json" ]; then
+            echo "No review output found."
+            exit 0  # Do not fail workflow if output is empty
+          fi
 
       - name: Extract PR Number
         id: get_pr
@@ -52,7 +55,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const llm_output = fs.readFileSync('llm_output.txt', 'utf8').trim();
+            const llm_output = fs.readFileSync('llm_output.json', 'utf8').trim();
 
             if (!llm_output) {
               console.log("⚠️ No output from LLM script.");
