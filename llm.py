@@ -22,28 +22,31 @@ def get_llm_client():
         openai_api_key=os.getenv("OPENAI_API_KEY"),
         openai_api_base="https://openrouter.ai/api/v1"
     ).with_structured_output(ReviewCode)
-
 def get_modified_files():
     """
-    Retrieves the list of modified Python files in a PR.
+    Retrieves only the modified Python files in the PR.
     """
     base_branch = os.getenv("GITHUB_BASE_REF")  # Base branch of the PR
     if not base_branch:
-        print("Error: GITHUB_BASE_REF is not set. Are you running in a PR context?")
+        print("Error: GITHUB_BASE_REF is not set. Ensure you are in a PR context.")
         sys.exit(1)
 
-    result = subprocess.run(["git", "fetch", "origin", base_branch], capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"Git fetch failed: {result.stderr}")
-        sys.exit(1)
+    # Fetch the latest changes from the base branch
+    subprocess.run(["git", "fetch", "origin", base_branch], check=True)
 
-    result = subprocess.run(["git", "diff", "--name-only", f"origin/{base_branch}...HEAD"], capture_output=True, text=True)
+    # Get the list of changed files between base branch and HEAD
+    result = subprocess.run(
+        ["git", "diff", "--name-only", f"origin/{base_branch}...HEAD"],
+        capture_output=True, text=True
+    )
 
     if result.returncode != 0:
-        print(f"Git command failed: {result.stderr}")
+        print(f"Git diff command failed: {result.stderr}")
         sys.exit(1)
 
     files = result.stdout.strip().split("\n")
+    
+    # Return only Python files
     return [file for file in files if file.endswith(".py")]
 
 def read_file_content(file_path):

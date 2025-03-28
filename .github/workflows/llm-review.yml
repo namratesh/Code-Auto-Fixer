@@ -20,8 +20,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history
-          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0  # Ensure full history is fetched
+          ref: ${{ github.event.pull_request.head.ref }}  
 
       - name: Set up Python
         uses: actions/setup-python@v4
