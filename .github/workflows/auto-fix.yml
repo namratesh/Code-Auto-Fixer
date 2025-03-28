@@ -26,13 +26,13 @@ jobs:
       - name: Get changed Python files
         id: changed-files
         run: |
-
-          echo "FILES=$(git diff --name-only --diff-filter=AM origin/main...HEAD | grep '\.py$' || echo '')" >> $GITHUB_ENV
+          FILES=$(git diff --name-only --diff-filter=AM origin/main...HEAD | grep '\.py$' | tr '\n' ' ' || echo '')
+          echo "FILES=$FILES" >> $GITHUB_ENV
+          echo "Changed files: $FILES"  # Debugging output
 
       - name: Run auto-fixer
         if: env.FILES != ''
         run: python auto_fix.py $FILES
-
 
       - name: Commit and push fixes
         if: env.FILES != ''
