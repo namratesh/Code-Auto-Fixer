@@ -38,7 +38,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           set -x  # Enables debug mode to show commands before execution
-          python llm.py > llm_output.txt 2>&1 || cat llm_output.txt
+          python llm.py > llm_output.txt 2>&1 || (cat llm_output.txt && exit 1)
           exit 1  # Forces a failure if any issue occurs
 
       - name: Extract PR Number
